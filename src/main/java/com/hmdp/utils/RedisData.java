@@ -6,10 +6,10 @@ import java.time.LocalDateTime;
 
 /**
  * @BelongProject: hm-dianping
- * @BelongPackage: com.hmdp.config
+ * @BelongPackage: com.hmdp.utils
  * @Author: 那个小楠瓜
  * @CreateTime: 2022-09-19 21:24
- * @Description: 用户日记评论表服务类
+ * @Description: redis 数据
  * @Version: 1.0
  */
 @Data

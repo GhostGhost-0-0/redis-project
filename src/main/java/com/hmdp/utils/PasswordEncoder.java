@@ -8,10 +8,10 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * @BelongProject: hm-dianping
- * @BelongPackage: com.hmdp.config
+ * @BelongPackage: com.hmdp.utils
  * @Author: 那个小楠瓜
  * @CreateTime: 2022-09-19 21:20
- * @Description: 用户日记评论表服务类
+ * @Description: 密码编码
  * @Version: 1.0
  */
 public class PasswordEncoder {
