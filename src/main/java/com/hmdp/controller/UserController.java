@@ -14,7 +14,7 @@ import javax.servlet.http.HttpSession;
 
 /**
  * @BelongProject: hm-dianping
- * @BelongPackage: com.hmdp.config
+ * @BelongPackage: com.hmdp.controller
  * @Author: 那个小楠瓜
  * @CreateTime: 2022-09-19 21:15
  * @Description: 前端控制器
@@ -36,8 +36,8 @@ public class UserController {
      */
     @PostMapping("code")
     public Result sendCode(@RequestParam("phone") String phone, HttpSession session) {
-        // TODO 发送短信验证码并保存验证码
-        return Result.fail("功能未完成");
+        // 发送短信验证码并保存验证码
+        return userService.sendCode(phone, session);
     }
 
     /**
@@ -46,8 +46,8 @@ public class UserController {
      */
     @PostMapping("/login")
     public Result login(@RequestBody LoginFormDTO loginForm, HttpSession session){
-        // TODO 实现登录功能
-        return Result.fail("功能未完成");
+        // 实现登录功能
+        return userService.login(loginForm, session);
     }
 
     /**
