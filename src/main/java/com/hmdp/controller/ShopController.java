@@ -13,7 +13,7 @@ import javax.annotation.Resource;
 
 /**
  * @BelongProject: hm-dianping
- * @BelongPackage: com.hmdp.config
+ * @BelongPackage: com.hmdp.controller
  * @Author: 那个小楠瓜
  * @CreateTime: 2022-09-19 21:15
  * @Description: 前端控制器
@@ -33,7 +33,7 @@ public class ShopController {
      */
     @GetMapping("/{id}")
     public Result queryShopById(@PathVariable("id") Long id) {
-        return Result.ok(shopService.getById(id));
+        return shopService.queryById(id);
     }
 
     /**
