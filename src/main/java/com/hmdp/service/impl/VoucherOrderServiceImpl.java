@@ -8,8 +8,10 @@ import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.RedisIdWorker;
+import com.hmdp.utils.SimpleRedisLock;
 import com.hmdp.utils.UserHolder;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Resource
     private RedisIdWorker redisIdWorker;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
     @Override
     @Transactional
     public Result seckillVoucher(Long voucherId) {
@@ -51,30 +56,26 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             // 库存不足
             return Result.fail("库存不足！");
         }
-        // 5.扣减库存
-        boolean success = seckillVoucherService.update()
-                .setSql("stock = stock - 1") // set stock = stock - 1
-                // 使用乐观锁解决超卖线程安全问题
-                .eq("voucher_id", voucherId).gt("stock", 0) // where voucher_id = ? and stock > 0
-                .update();
-        if (!success) {
-            // 扣减失败
-            return Result.fail("库存不足！");
-        }
-
-        // 6.创建订单
+        // 5.创建订单
+        // 5.1.创建锁对象
         Long userId = UserHolder.getUser().getId();
-
-        // 对每个用户进行加锁，减少悲观锁的性能影响，因为 synchronized 锁的是当前对象
-        // 每个用户就是一个对象，因此每个用户都有自己的锁
-        // 但是 toString() 方法底层实际上是重新 new 了一个 String 对象，这样会导致
-        // 即使是同一个用户每次进到这个方法依旧会拿到一把锁，跟预期不符
-        // 因此后面再加一个 intern() 方法让 String 去常量池找而不是重新 new 一个 String 对象
-        synchronized (userId.toString().intern()) {
+        SimpleRedisLock lock = new SimpleRedisLock("orders:" + userId, stringRedisTemplate);
+        // 5.2.获取锁
+        boolean isLock = lock.tryLock(1200);
+        // 5.3.判断是否获取锁成功
+        if (!isLock) {
+            // 获取锁失败，返回错误信息或重试
+            return Result.fail("不允许重复下单");
+        }
+        // 5.4.创建订单
+         try {
             // 获取代理对象（事务）
             IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
             return proxy.createVoucherOrder(voucherId);
-        }
+        } finally {
+             // 释放锁
+             lock.unlock();
+         }
     }
 
     @Transactional
@@ -87,17 +88,27 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if (count > 0) {
             return Result.fail("已经下过单了，一个人只能下单一次！");
         }
-        // 2.创建订单
-        // 2.1.订单 id
+        // 2.扣减库存
+        boolean success = seckillVoucherService.update()
+                .setSql("stock = stock - 1") // set stock = stock - 1
+                // 使用乐观锁解决超卖线程安全问题
+                .eq("voucher_id", voucherId).gt("stock", 0) // where voucher_id = ? and stock > 0
+                .update();
+        if (!success) {
+            // 扣减失败
+            return Result.fail("库存不足！");
+        }
+        // 3.创建订单
+        // 3.1.订单 id
         VoucherOrder voucherOrder = new VoucherOrder();
         long orderId = redisIdWorker.nextId("order");
         voucherOrder.setId(orderId);
-        // 2.2.用户 id
+        // 3.2.用户 id
         voucherOrder.setUserId(userId);
-        // 2.3.代金券 id
+        // 3.3.代金券 id
         voucherOrder.setVoucherId(voucherId);
         save(voucherOrder);
-        // 3.返回订单 id
+        // 4.返回订单 id
         return Result.ok(orderId);
     }
 }
