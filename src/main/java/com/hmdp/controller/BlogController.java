@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * @BelongProject: hm-dianping
- * @BelongPackage: com.hmdp.config
+ * @BelongPackage: com.hmdp.controller
  * @Author: 那个小楠瓜
  * @CreateTime: 2022-09-19 21:15
  * @Description: 前端控制器
@@ -44,10 +44,7 @@ public class BlogController {
 
     @PutMapping("/like/{id}")
     public Result likeBlog(@PathVariable("id") Long id) {
-        // 修改点赞数量
-        blogService.update()
-                .setSql("liked = liked + 1").eq("id", id).update();
-        return Result.ok();
+        return blogService.likeBlog(id);
     }
 
     @GetMapping("/of/me")
