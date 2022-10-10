@@ -1,4 +1,5 @@
 # redis-project
+## 代码请查看 master 分支
 一个 redis 项目，主要是熟悉 redis 的开发应用场景
 
 - [x] 实现基于 Session 的登录流程  
